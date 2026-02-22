@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stock-asset-analyzer"
+version = "0.1.0"
+description = "Analyze stocks and cryptocurrencies to identify short-term trading opportunities"
+requires-python = ">=3.12"
+dependencies = [
+    "yfinance>=1.2.0",
+    "pandas>=2.2.3",
+]
+
+[project.scripts]
+stock-analyzer = "stock_analyzer.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "hypothesis==6.122.3",
+    "pytest==8.3.4",
+    "pytest-cov==6.0.0",
+    "pytest-mock==3.14.0",
+    "pytest-timeout==2.3.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=stock_analyzer",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--timeout=30",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

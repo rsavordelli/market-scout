@@ -8,27 +8,59 @@ import sys
 from io import StringIO
 from unittest.mock import Mock, patch, MagicMock
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
-from stock_analyzer.cli import (
+from market_scout.cli import (
     main,
     display_usage,
     display_opportunities,
     display_consensus_opportunities
 )
-from stock_analyzer.models import (
+from market_scout.models import (
     TradingOpportunity,
     ValidationResult,
     ConsensusOpportunity
 )
-from stock_analyzer.exceptions import (
+from market_scout.exceptions import (
     SymbolNotFoundError,
     ServiceUnavailableError,
     NetworkError,
     InsufficientDataError
 )
+
+
+def create_test_opportunity(
+    symbol="AAPL",
+    entry_price=Decimal("150.00"),
+    stop_loss_price=Decimal("142.50"),
+    gain_target_price=Decimal("165.00"),
+    model_id="test_model",
+    generated_at=None,
+    data_period_start=None,
+    data_period_end=None,
+    reasoning="Test reasoning"
+):
+    """Helper function to create TradingOpportunity instances for testing."""
+    if generated_at is None:
+        generated_at = datetime.now()
+    if data_period_start is None:
+        data_period_start = generated_at - timedelta(days=30)
+    if data_period_end is None:
+        data_period_end = generated_at - timedelta(days=1)
+    
+    return TradingOpportunity(
+        symbol=symbol,
+        entry_price=entry_price,
+        stop_loss_price=stop_loss_price,
+        gain_target_price=gain_target_price,
+        model_id=model_id,
+        generated_at=generated_at,
+        data_period_start=data_period_start,
+        data_period_end=data_period_end,
+        reasoning=reasoning
+    )
 
 
 class TestDisplayUsage:
@@ -41,9 +73,9 @@ class TestDisplayUsage:
         captured = capsys.readouterr()
         output = captured.out
         
-        assert "Stock Asset Analyzer" in output
+        assert "Market Scout" in output
         assert "Usage:" in output
-        assert "python -m stock_analyzer <SYMBOL>" in output
+        assert "market-scout <SYMBOL>" in output or "scout <SYMBOL>" in output
         assert "SYMBOL" in output
         assert "Examples:" in output
         assert "AAPL" in output
@@ -68,7 +100,7 @@ class TestDisplayOpportunities:
     
     def test_displays_single_opportunity(self, capsys):
         """Test display of a single trading opportunity."""
-        opp = TradingOpportunity(
+        opp = create_test_opportunity(
             symbol="AAPL",
             entry_price=Decimal("150.00"),
             stop_loss_price=Decimal("142.50"),
@@ -99,7 +131,7 @@ class TestDisplayOpportunities:
     
     def test_displays_multiple_opportunities_grouped_by_symbol(self, capsys):
         """Test that opportunities are grouped by symbol."""
-        opp1 = TradingOpportunity(
+        opp1 = create_test_opportunity(
             symbol="AAPL",
             entry_price=Decimal("150.00"),
             stop_loss_price=Decimal("142.50"),
@@ -108,7 +140,7 @@ class TestDisplayOpportunities:
             generated_at=datetime(2024, 1, 15, 10, 30, 0)
         )
         
-        opp2 = TradingOpportunity(
+        opp2 = create_test_opportunity(
             symbol="AAPL",
             entry_price=Decimal("151.00"),
             stop_loss_price=Decimal("143.45"),
@@ -117,7 +149,7 @@ class TestDisplayOpportunities:
             generated_at=datetime(2024, 1, 15, 10, 30, 0)
         )
         
-        opp3 = TradingOpportunity(
+        opp3 = create_test_opportunity(
             symbol="TSLA",
             entry_price=Decimal("200.00"),
             stop_loss_price=Decimal("190.00"),
@@ -196,12 +228,12 @@ class TestDisplayConsensusOpportunities:
 class TestMain:
     """Tests for the main CLI entry point."""
     
-    @patch('stock_analyzer.cli.Analyzer')
-    @patch('stock_analyzer.cli.YahooFinanceClient')
-    @patch('stock_analyzer.cli.ModelRegistry')
-    @patch('stock_analyzer.cli.ValidationEngine')
-    @patch('stock_analyzer.cli.NaiveModel')
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.Analyzer')
+    @patch('market_scout.cli.YahooFinanceClient')
+    @patch('market_scout.cli.ModelRegistry')
+    @patch('market_scout.cli.ValidationEngine')
+    @patch('market_scout.cli.NaiveModel')
+    @patch('market_scout.cli.setup_logging')
     def test_main_with_valid_symbol(
         self,
         mock_setup_logging,
@@ -217,7 +249,7 @@ class TestMain:
         mock_analyzer_instance = Mock()
         mock_analyzer.return_value = mock_analyzer_instance
         
-        opp = TradingOpportunity(
+        opp = create_test_opportunity(
             symbol="AAPL",
             entry_price=Decimal("150.00"),
             stop_loss_price=Decimal("142.50"),
@@ -247,7 +279,7 @@ class TestMain:
         assert "Analyzing AAPL" in captured.out
         assert "Analysis complete" in captured.out
     
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.setup_logging')
     def test_main_with_no_arguments(self, mock_setup_logging, capsys):
         """Test main function with no arguments displays usage."""
         with patch.object(sys, 'argv', ['prog']):
@@ -257,9 +289,9 @@ class TestMain:
         
         captured = capsys.readouterr()
         assert "Usage:" in captured.out
-        assert "python -m stock_analyzer <SYMBOL>" in captured.out
+        assert "market-scout" in captured.out or "scout" in captured.out
     
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.setup_logging')
     def test_main_with_empty_symbol(self, mock_setup_logging, capsys):
         """Test main function with empty symbol."""
         with patch.object(sys, 'argv', ['prog', '  ']):
@@ -270,12 +302,12 @@ class TestMain:
         captured = capsys.readouterr()
         assert "Error: Symbol cannot be empty" in captured.out
     
-    @patch('stock_analyzer.cli.Analyzer')
-    @patch('stock_analyzer.cli.YahooFinanceClient')
-    @patch('stock_analyzer.cli.ModelRegistry')
-    @patch('stock_analyzer.cli.ValidationEngine')
-    @patch('stock_analyzer.cli.NaiveModel')
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.Analyzer')
+    @patch('market_scout.cli.YahooFinanceClient')
+    @patch('market_scout.cli.ModelRegistry')
+    @patch('market_scout.cli.ValidationEngine')
+    @patch('market_scout.cli.NaiveModel')
+    @patch('market_scout.cli.setup_logging')
     def test_main_with_symbol_not_found_error(
         self,
         mock_setup_logging,
@@ -301,12 +333,12 @@ class TestMain:
         assert "Symbol INVALID not found" in captured.out
         assert "valid symbols" in captured.out.lower()
     
-    @patch('stock_analyzer.cli.Analyzer')
-    @patch('stock_analyzer.cli.YahooFinanceClient')
-    @patch('stock_analyzer.cli.ModelRegistry')
-    @patch('stock_analyzer.cli.ValidationEngine')
-    @patch('stock_analyzer.cli.NaiveModel')
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.Analyzer')
+    @patch('market_scout.cli.YahooFinanceClient')
+    @patch('market_scout.cli.ModelRegistry')
+    @patch('market_scout.cli.ValidationEngine')
+    @patch('market_scout.cli.NaiveModel')
+    @patch('market_scout.cli.setup_logging')
     def test_main_with_service_unavailable_error(
         self,
         mock_setup_logging,
@@ -332,12 +364,12 @@ class TestMain:
         assert "Yahoo Finance unavailable" in captured.out
         assert "try again later" in captured.out.lower()
     
-    @patch('stock_analyzer.cli.Analyzer')
-    @patch('stock_analyzer.cli.YahooFinanceClient')
-    @patch('stock_analyzer.cli.ModelRegistry')
-    @patch('stock_analyzer.cli.ValidationEngine')
-    @patch('stock_analyzer.cli.NaiveModel')
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.Analyzer')
+    @patch('market_scout.cli.YahooFinanceClient')
+    @patch('market_scout.cli.ModelRegistry')
+    @patch('market_scout.cli.ValidationEngine')
+    @patch('market_scout.cli.NaiveModel')
+    @patch('market_scout.cli.setup_logging')
     def test_main_with_network_error(
         self,
         mock_setup_logging,
@@ -363,12 +395,12 @@ class TestMain:
         assert "Connection timeout" in captured.out
         assert "internet connection" in captured.out.lower()
     
-    @patch('stock_analyzer.cli.Analyzer')
-    @patch('stock_analyzer.cli.YahooFinanceClient')
-    @patch('stock_analyzer.cli.ModelRegistry')
-    @patch('stock_analyzer.cli.ValidationEngine')
-    @patch('stock_analyzer.cli.NaiveModel')
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.Analyzer')
+    @patch('market_scout.cli.YahooFinanceClient')
+    @patch('market_scout.cli.ModelRegistry')
+    @patch('market_scout.cli.ValidationEngine')
+    @patch('market_scout.cli.NaiveModel')
+    @patch('market_scout.cli.setup_logging')
     def test_main_with_insufficient_data_error(
         self,
         mock_setup_logging,
@@ -394,12 +426,12 @@ class TestMain:
         assert "Not enough data" in captured.out
         assert "not enough historical data" in captured.out.lower()
     
-    @patch('stock_analyzer.cli.Analyzer')
-    @patch('stock_analyzer.cli.YahooFinanceClient')
-    @patch('stock_analyzer.cli.ModelRegistry')
-    @patch('stock_analyzer.cli.ValidationEngine')
-    @patch('stock_analyzer.cli.NaiveModel')
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.Analyzer')
+    @patch('market_scout.cli.YahooFinanceClient')
+    @patch('market_scout.cli.ModelRegistry')
+    @patch('market_scout.cli.ValidationEngine')
+    @patch('market_scout.cli.NaiveModel')
+    @patch('market_scout.cli.setup_logging')
     def test_main_with_unexpected_error(
         self,
         mock_setup_logging,
@@ -425,12 +457,12 @@ class TestMain:
         assert "ValueError" in captured.out
         assert "log file" in captured.out.lower()
     
-    @patch('stock_analyzer.cli.Analyzer')
-    @patch('stock_analyzer.cli.YahooFinanceClient')
-    @patch('stock_analyzer.cli.ModelRegistry')
-    @patch('stock_analyzer.cli.ValidationEngine')
-    @patch('stock_analyzer.cli.NaiveModel')
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.Analyzer')
+    @patch('market_scout.cli.YahooFinanceClient')
+    @patch('market_scout.cli.ModelRegistry')
+    @patch('market_scout.cli.ValidationEngine')
+    @patch('market_scout.cli.NaiveModel')
+    @patch('market_scout.cli.setup_logging')
     def test_main_initializes_all_components(
         self,
         mock_setup_logging,
@@ -473,12 +505,12 @@ class TestMain:
         mock_naive_model_class.assert_called_once()
         mock_registry.register.assert_called_once_with(mock_naive_model)
     
-    @patch('stock_analyzer.cli.Analyzer')
-    @patch('stock_analyzer.cli.YahooFinanceClient')
-    @patch('stock_analyzer.cli.ModelRegistry')
-    @patch('stock_analyzer.cli.ValidationEngine')
-    @patch('stock_analyzer.cli.NaiveModel')
-    @patch('stock_analyzer.cli.setup_logging')
+    @patch('market_scout.cli.Analyzer')
+    @patch('market_scout.cli.YahooFinanceClient')
+    @patch('market_scout.cli.ModelRegistry')
+    @patch('market_scout.cli.ValidationEngine')
+    @patch('market_scout.cli.NaiveModel')
+    @patch('market_scout.cli.setup_logging')
     def test_main_displays_consensus_opportunities(
         self,
         mock_setup_logging,

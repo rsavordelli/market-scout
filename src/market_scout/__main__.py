@@ -1,7 +1,7 @@
-"""Entry point for running stock_analyzer as a module.
+"""Entry point for running market_scout as a module.
 
 This allows the package to be executed with:
-    python -m stock_analyzer <SYMBOL>
+    python -m market_scout <SYMBOL>
 """
 
 import sys

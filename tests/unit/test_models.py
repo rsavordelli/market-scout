@@ -1,17 +1,49 @@
 """Unit tests for data models."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pandas as pd
 import pytest
 
-from stock_analyzer.models import (
+from market_scout.models import (
     ConsensusOpportunity,
     HistoricalData,
     TradingOpportunity,
     ValidationResult,
 )
+
+
+def create_test_opportunity(
+    symbol="AAPL",
+    entry_price=Decimal("100.00"),
+    stop_loss_price=Decimal("95.00"),
+    gain_target_price=Decimal("110.00"),
+    model_id="test_model",
+    generated_at=None,
+    data_period_start=None,
+    data_period_end=None,
+    reasoning="Test reasoning"
+):
+    """Helper function to create TradingOpportunity instances for testing."""
+    if generated_at is None:
+        generated_at = datetime.now()
+    if data_period_start is None:
+        data_period_start = generated_at - timedelta(days=30)
+    if data_period_end is None:
+        data_period_end = generated_at - timedelta(days=1)
+    
+    return TradingOpportunity(
+        symbol=symbol,
+        entry_price=entry_price,
+        stop_loss_price=stop_loss_price,
+        gain_target_price=gain_target_price,
+        model_id=model_id,
+        generated_at=generated_at,
+        data_period_start=data_period_start,
+        data_period_end=data_period_end,
+        reasoning=reasoning
+    )
 
 
 class TestHistoricalData:
@@ -121,13 +153,12 @@ class TestTradingOpportunity:
     
     def test_valid_trading_opportunity(self):
         """Test that TradingOpportunity accepts valid price relationships."""
-        opp = TradingOpportunity(
+        opp = create_test_opportunity(
             symbol="AAPL",
             entry_price=Decimal("100.00"),
             stop_loss_price=Decimal("95.00"),
             gain_target_price=Decimal("110.00"),
-            model_id="naive_model",
-            generated_at=datetime.now()
+            model_id="naive_model"
         )
         
         assert opp.symbol == "AAPL"
@@ -136,17 +167,17 @@ class TestTradingOpportunity:
         assert opp.gain_target_price == Decimal("110.00")
         assert opp.model_id == "naive_model"
         assert isinstance(opp.generated_at, datetime)
+        assert isinstance(opp.data_period_start, datetime)
+        assert isinstance(opp.data_period_end, datetime)
+        assert isinstance(opp.reasoning, str)
     
     def test_invalid_price_relationship_stop_loss_above_entry(self):
         """Test that stop_loss >= entry raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="AAPL",
+            create_test_opportunity(
                 entry_price=Decimal("100.00"),
                 stop_loss_price=Decimal("105.00"),  # Above entry
-                gain_target_price=Decimal("110.00"),
-                model_id="test_model",
-                generated_at=datetime.now()
+                gain_target_price=Decimal("110.00")
             )
         
         assert "Invalid price relationship" in str(exc_info.value)
@@ -155,13 +186,10 @@ class TestTradingOpportunity:
     def test_invalid_price_relationship_gain_target_below_entry(self):
         """Test that gain_target <= entry raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="AAPL",
+            create_test_opportunity(
                 entry_price=Decimal("100.00"),
                 stop_loss_price=Decimal("95.00"),
-                gain_target_price=Decimal("98.00"),  # Below entry
-                model_id="test_model",
-                generated_at=datetime.now()
+                gain_target_price=Decimal("98.00")  # Below entry
             )
         
         assert "Invalid price relationship" in str(exc_info.value)
@@ -169,13 +197,10 @@ class TestTradingOpportunity:
     def test_invalid_price_relationship_stop_loss_equals_entry(self):
         """Test that stop_loss == entry raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="AAPL",
+            create_test_opportunity(
                 entry_price=Decimal("100.00"),
                 stop_loss_price=Decimal("100.00"),  # Equal to entry
-                gain_target_price=Decimal("110.00"),
-                model_id="test_model",
-                generated_at=datetime.now()
+                gain_target_price=Decimal("110.00")
             )
         
         assert "Invalid price relationship" in str(exc_info.value)
@@ -183,13 +208,10 @@ class TestTradingOpportunity:
     def test_negative_entry_price(self):
         """Test that negative entry price raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="AAPL",
+            create_test_opportunity(
                 entry_price=Decimal("-100.00"),
                 stop_loss_price=Decimal("-105.00"),
-                gain_target_price=Decimal("-95.00"),
-                model_id="test_model",
-                generated_at=datetime.now()
+                gain_target_price=Decimal("-95.00")
             )
         
         assert "All prices must be positive" in str(exc_info.value)
@@ -197,13 +219,10 @@ class TestTradingOpportunity:
     def test_zero_entry_price(self):
         """Test that zero entry price raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="AAPL",
+            create_test_opportunity(
                 entry_price=Decimal("0.00"),
                 stop_loss_price=Decimal("-5.00"),
-                gain_target_price=Decimal("10.00"),
-                model_id="test_model",
-                generated_at=datetime.now()
+                gain_target_price=Decimal("10.00")
             )
         
         assert "All prices must be positive" in str(exc_info.value)
@@ -211,81 +230,49 @@ class TestTradingOpportunity:
     def test_empty_symbol(self):
         """Test that empty symbol raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="",
-                entry_price=Decimal("100.00"),
-                stop_loss_price=Decimal("95.00"),
-                gain_target_price=Decimal("110.00"),
-                model_id="test_model",
-                generated_at=datetime.now()
-            )
+            create_test_opportunity(symbol="")
         
         assert "Symbol must be a non-empty string" in str(exc_info.value)
     
     def test_whitespace_only_symbol(self):
         """Test that whitespace-only symbol raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="   ",
-                entry_price=Decimal("100.00"),
-                stop_loss_price=Decimal("95.00"),
-                gain_target_price=Decimal("110.00"),
-                model_id="test_model",
-                generated_at=datetime.now()
-            )
+            create_test_opportunity(symbol="   ")
         
         assert "Symbol must be a non-empty string" in str(exc_info.value)
     
     def test_empty_model_id(self):
         """Test that empty model_id raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="AAPL",
-                entry_price=Decimal("100.00"),
-                stop_loss_price=Decimal("95.00"),
-                gain_target_price=Decimal("110.00"),
-                model_id="",
-                generated_at=datetime.now()
-            )
+            create_test_opportunity(model_id="")
         
         assert "Model ID must be a non-empty string" in str(exc_info.value)
     
     def test_whitespace_only_model_id(self):
         """Test that whitespace-only model_id raises ValueError."""
         with pytest.raises(ValueError) as exc_info:
-            TradingOpportunity(
-                symbol="AAPL",
-                entry_price=Decimal("100.00"),
-                stop_loss_price=Decimal("95.00"),
-                gain_target_price=Decimal("110.00"),
-                model_id="   ",
-                generated_at=datetime.now()
-            )
+            create_test_opportunity(model_id="   ")
         
         assert "Model ID must be a non-empty string" in str(exc_info.value)
     
     def test_very_small_price_differences(self):
         """Test that very small but valid price differences work."""
-        opp = TradingOpportunity(
-            symbol="AAPL",
+        opp = create_test_opportunity(
             entry_price=Decimal("100.00"),
             stop_loss_price=Decimal("99.99"),
-            gain_target_price=Decimal("100.01"),
-            model_id="test_model",
-            generated_at=datetime.now()
+            gain_target_price=Decimal("100.01")
         )
         
         assert opp.stop_loss_price < opp.entry_price < opp.gain_target_price
     
     def test_cryptocurrency_symbol(self):
         """Test that cryptocurrency symbols work correctly."""
-        opp = TradingOpportunity(
+        opp = create_test_opportunity(
             symbol="BTC-USD",
             entry_price=Decimal("50000.00"),
             stop_loss_price=Decimal("47500.00"),
             gain_target_price=Decimal("55000.00"),
-            model_id="naive_model",
-            generated_at=datetime.now()
+            model_id="naive_model"
         )
         
         assert opp.symbol == "BTC-USD"
@@ -293,13 +280,10 @@ class TestTradingOpportunity:
     
     def test_high_precision_decimal_prices(self):
         """Test that high precision Decimal prices are preserved."""
-        opp = TradingOpportunity(
-            symbol="AAPL",
+        opp = create_test_opportunity(
             entry_price=Decimal("100.123456"),
             stop_loss_price=Decimal("95.123456"),
-            gain_target_price=Decimal("110.123456"),
-            model_id="test_model",
-            generated_at=datetime.now()
+            gain_target_price=Decimal("110.123456")
         )
         
         assert opp.entry_price == Decimal("100.123456")
@@ -405,22 +389,20 @@ class TestValidationResult:
     
     def test_valid_validation_result_with_opportunities(self):
         """Test ValidationResult with opportunities and consensus."""
-        opp1 = TradingOpportunity(
+        opp1 = create_test_opportunity(
             symbol="AAPL",
             entry_price=Decimal("100.00"),
             stop_loss_price=Decimal("95.00"),
             gain_target_price=Decimal("110.00"),
-            model_id="model_1",
-            generated_at=datetime.now()
+            model_id="model_1"
         )
         
-        opp2 = TradingOpportunity(
+        opp2 = create_test_opportunity(
             symbol="AAPL",
             entry_price=Decimal("101.00"),
             stop_loss_price=Decimal("96.00"),
             gain_target_price=Decimal("111.00"),
-            model_id="model_2",
-            generated_at=datetime.now()
+            model_id="model_2"
         )
         
         consensus = ConsensusOpportunity(
@@ -458,14 +440,7 @@ class TestValidationResult:
     
     def test_validation_result_no_consensus(self):
         """Test ValidationResult with opportunities but no consensus."""
-        opp = TradingOpportunity(
-            symbol="AAPL",
-            entry_price=Decimal("100.00"),
-            stop_loss_price=Decimal("95.00"),
-            gain_target_price=Decimal("110.00"),
-            model_id="model_1",
-            generated_at=datetime.now()
-        )
+        opp = create_test_opportunity()
         
         result = ValidationResult(
             opportunities=[opp],
@@ -479,22 +454,13 @@ class TestValidationResult:
     
     def test_validation_result_multiple_symbols(self):
         """Test ValidationResult with opportunities for multiple symbols."""
-        opp1 = TradingOpportunity(
-            symbol="AAPL",
-            entry_price=Decimal("100.00"),
-            stop_loss_price=Decimal("95.00"),
-            gain_target_price=Decimal("110.00"),
-            model_id="model_1",
-            generated_at=datetime.now()
-        )
+        opp1 = create_test_opportunity(symbol="AAPL")
         
-        opp2 = TradingOpportunity(
+        opp2 = create_test_opportunity(
             symbol="BTC-USD",
             entry_price=Decimal("50000.00"),
             stop_loss_price=Decimal("47500.00"),
-            gain_target_price=Decimal("55000.00"),
-            model_id="model_1",
-            generated_at=datetime.now()
+            gain_target_price=Decimal("55000.00")
         )
         
         result = ValidationResult(
@@ -511,14 +477,7 @@ class TestValidationResult:
     def test_validation_result_model_count_mismatch(self):
         """Test that model_count can differ from number of opportunities."""
         # This is valid: 3 models ran, but only 1 generated an opportunity
-        opp = TradingOpportunity(
-            symbol="AAPL",
-            entry_price=Decimal("100.00"),
-            stop_loss_price=Decimal("95.00"),
-            gain_target_price=Decimal("110.00"),
-            model_id="model_1",
-            generated_at=datetime.now()
-        )
+        opp = create_test_opportunity()
         
         result = ValidationResult(
             opportunities=[opp],

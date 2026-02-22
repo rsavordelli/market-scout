@@ -2,8 +2,8 @@
 
 import pytest
 
-from stock_analyzer.model_registry import ModelRegistry
-from stock_analyzer.models import PredictionModel, HistoricalData, TradingOpportunity
+from market_scout.model_registry import ModelRegistry
+from market_scout.models import PredictionModel, HistoricalData, TradingOpportunity
 
 
 class MockModel(PredictionModel):

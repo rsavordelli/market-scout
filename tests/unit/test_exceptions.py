@@ -1,7 +1,7 @@
 """Unit tests for custom exception classes."""
 
 import pytest
-from stock_analyzer.exceptions import (
+from market_scout.exceptions import (
     SymbolNotFoundError,
     ServiceUnavailableError,
     NetworkError,

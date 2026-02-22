@@ -6,8 +6,8 @@ from decimal import Decimal
 import pandas as pd
 import pytest
 
-from stock_analyzer.models import HistoricalData, TradingOpportunity
-from stock_analyzer.naive_model import NaiveModel
+from market_scout.models import HistoricalData, TradingOpportunity
+from market_scout.naive_model import NaiveModel
 
 
 class TestNaiveModel:

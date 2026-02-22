@@ -6,7 +6,7 @@ upward price momentum and generates opportunities with configurable risk paramet
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from .models import HistoricalData, PredictionModel, TradingOpportunity
@@ -92,6 +92,9 @@ class NaiveModel(PredictionModel):
             )
             return []
         
+        # Calculate momentum percentage
+        momentum_pct = ((latest_close - avg_previous) / avg_previous) * 100
+        
         # Convert to Decimal for precise financial calculations
         entry_price = Decimal(str(latest_close))
         
@@ -100,6 +103,25 @@ class NaiveModel(PredictionModel):
         
         # Calculate gain target: entry * (1 + gain_target_pct)
         gain_target_price = entry_price * Decimal(str(1 + self.gain_target_pct))
+        
+        # Get data period from dataframe index
+        if hasattr(df.index[0], 'to_pydatetime'):
+            # DatetimeIndex
+            data_period_start = df.index[0].to_pydatetime()
+            data_period_end = df.index[-1].to_pydatetime()
+        else:
+            # Non-datetime index (e.g., in tests), use current time
+            now = datetime.now()
+            data_period_start = now - timedelta(days=len(df))
+            data_period_end = now
+        
+        # Build reasoning explanation
+        reasoning = (
+            f"Upward momentum detected: current price ${latest_close:.2f} is "
+            f"{momentum_pct:.1f}% above 4-day average of ${avg_previous:.2f}. "
+            f"Stop loss set at {self.stop_loss_pct*100:.0f}% below entry, "
+            f"gain target at {self.gain_target_pct*100:.0f}% above entry."
+        )
         
         logger.debug(
             f"Opportunity generated for {data.symbol}: "
@@ -114,7 +136,10 @@ class NaiveModel(PredictionModel):
             stop_loss_price=stop_loss_price,
             gain_target_price=gain_target_price,
             model_id=self.model_id,
-            generated_at=datetime.now()
+            generated_at=datetime.now(),
+            data_period_start=data_period_start,
+            data_period_end=data_period_end,
+            reasoning=reasoning
         )
         
         return [opportunity]

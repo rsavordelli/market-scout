@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "stock-asset-analyzer"
+name = "market-scout"
 version = "0.1.0"
 description = "Analyze stocks and cryptocurrencies to identify short-term trading opportunities"
 requires-python = ">=3.12"
@@ -13,7 +13,8 @@ dependencies = [
 ]
 
 [project.scripts]
-stock-analyzer = "stock_analyzer.cli:main"
+market-scout = "market_scout.cli:main"
+scout = "market_scout.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -33,7 +34,7 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "--cov=stock_analyzer",
+    "--cov=market_scout",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--timeout=30",

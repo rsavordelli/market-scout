@@ -7,7 +7,7 @@ of available prediction models and provides discovery mechanisms.
 import logging
 from typing import Optional
 
-from stock_analyzer.models import PredictionModel
+from market_scout.models import PredictionModel
 
 logger = logging.getLogger(__name__)
 

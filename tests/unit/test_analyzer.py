@@ -1,19 +1,51 @@
 """Unit tests for the Analyzer class."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from unittest.mock import Mock, MagicMock
 import pandas as pd
 
-from stock_analyzer.analyzer import Analyzer
-from stock_analyzer.exceptions import SymbolNotFoundError, ServiceUnavailableError
-from stock_analyzer.models import (
+from market_scout.analyzer import Analyzer
+from market_scout.exceptions import SymbolNotFoundError, ServiceUnavailableError
+from market_scout.models import (
     HistoricalData,
     TradingOpportunity,
     ValidationResult,
     PredictionModel
 )
+
+
+def create_test_opportunity(
+    symbol="TEST",
+    entry_price=Decimal("100.00"),
+    stop_loss_price=Decimal("95.00"),
+    gain_target_price=Decimal("110.00"),
+    model_id="test_model",
+    generated_at=None,
+    data_period_start=None,
+    data_period_end=None,
+    reasoning="Test reasoning"
+):
+    """Helper function to create TradingOpportunity instances for testing."""
+    if generated_at is None:
+        generated_at = datetime.now()
+    if data_period_start is None:
+        data_period_start = generated_at - timedelta(days=30)
+    if data_period_end is None:
+        data_period_end = generated_at - timedelta(days=1)
+    
+    return TradingOpportunity(
+        symbol=symbol,
+        entry_price=entry_price,
+        stop_loss_price=stop_loss_price,
+        gain_target_price=gain_target_price,
+        model_id=model_id,
+        generated_at=generated_at,
+        data_period_start=data_period_start,
+        data_period_end=data_period_end,
+        reasoning=reasoning
+    )
 
 
 class MockModel(PredictionModel):
@@ -67,14 +99,7 @@ def sample_historical_data():
 @pytest.fixture
 def sample_opportunity():
     """Create a sample trading opportunity."""
-    return TradingOpportunity(
-        symbol="TEST",
-        entry_price=Decimal("100.00"),
-        stop_loss_price=Decimal("95.00"),
-        gain_target_price=Decimal("110.00"),
-        model_id="test_model",
-        generated_at=datetime.now()
-    )
+    return create_test_opportunity()
 
 
 def test_analyzer_initialization():
@@ -122,21 +147,12 @@ def test_analyze_symbol_with_single_model(sample_historical_data, sample_opportu
 def test_analyze_symbol_with_multiple_models(sample_historical_data):
     """Test analysis with multiple models generating opportunities."""
     # Create opportunities from different models
-    opp1 = TradingOpportunity(
-        symbol="TEST",
-        entry_price=Decimal("100.00"),
-        stop_loss_price=Decimal("95.00"),
-        gain_target_price=Decimal("110.00"),
-        model_id="model1",
-        generated_at=datetime.now()
-    )
-    opp2 = TradingOpportunity(
-        symbol="TEST",
+    opp1 = create_test_opportunity(model_id="model1")
+    opp2 = create_test_opportunity(
         entry_price=Decimal("101.00"),
         stop_loss_price=Decimal("96.00"),
         gain_target_price=Decimal("111.00"),
-        model_id="model2",
-        generated_at=datetime.now()
+        model_id="model2"
     )
     
     # Setup mocks
@@ -322,21 +338,11 @@ def test_analyze_symbol_with_model_returning_multiple_opportunities(sample_histo
     """Test analysis when a single model returns multiple opportunities."""
     # Create multiple opportunities
     opps = [
-        TradingOpportunity(
-            symbol="TEST",
-            entry_price=Decimal("100.00"),
-            stop_loss_price=Decimal("95.00"),
-            gain_target_price=Decimal("110.00"),
-            model_id="test_model",
-            generated_at=datetime.now()
-        ),
-        TradingOpportunity(
-            symbol="TEST",
+        create_test_opportunity(),
+        create_test_opportunity(
             entry_price=Decimal("105.00"),
             stop_loss_price=Decimal("100.00"),
-            gain_target_price=Decimal("115.00"),
-            model_id="test_model",
-            generated_at=datetime.now()
+            gain_target_price=Decimal("115.00")
         )
     ]
     

@@ -7,12 +7,12 @@ from unittest.mock import patch
 
 import pytest
 
-from stock_analyzer.logging_setup import setup_logging
+from market_scout.logging_setup import setup_logging
 
 
 def test_setup_logging_creates_log_directory(tmp_path):
     """Test that setup_logging creates the log directory if it doesn't exist."""
-    with patch("stock_analyzer.logging_setup.Path.home", return_value=tmp_path):
+    with patch("market_scout.logging_setup.Path.home", return_value=tmp_path):
         setup_logging()
         
         log_dir = tmp_path / ".stock-analyzer"
@@ -22,7 +22,7 @@ def test_setup_logging_creates_log_directory(tmp_path):
 
 def test_setup_logging_creates_log_file(tmp_path):
     """Test that setup_logging creates the log file."""
-    with patch("stock_analyzer.logging_setup.Path.home", return_value=tmp_path):
+    with patch("market_scout.logging_setup.Path.home", return_value=tmp_path):
         setup_logging()
         
         log_file = tmp_path / ".stock-analyzer" / "analyzer.log"
@@ -32,7 +32,7 @@ def test_setup_logging_creates_log_file(tmp_path):
 
 def test_setup_logging_configures_console_handler(tmp_path):
     """Test that console handler is configured for WARNING+ level."""
-    with patch("stock_analyzer.logging_setup.Path.home", return_value=tmp_path):
+    with patch("market_scout.logging_setup.Path.home", return_value=tmp_path):
         setup_logging()
         
         root_logger = logging.getLogger()
@@ -47,7 +47,7 @@ def test_setup_logging_configures_console_handler(tmp_path):
 
 def test_setup_logging_configures_file_handler(tmp_path):
     """Test that file handler is configured for DEBUG+ level with rotation."""
-    with patch("stock_analyzer.logging_setup.Path.home", return_value=tmp_path):
+    with patch("market_scout.logging_setup.Path.home", return_value=tmp_path):
         setup_logging()
         
         root_logger = logging.getLogger()
@@ -64,7 +64,7 @@ def test_setup_logging_configures_file_handler(tmp_path):
 
 def test_setup_logging_format(tmp_path):
     """Test that log format includes timestamp, name, level, and message."""
-    with patch("stock_analyzer.logging_setup.Path.home", return_value=tmp_path):
+    with patch("market_scout.logging_setup.Path.home", return_value=tmp_path):
         setup_logging()
         
         root_logger = logging.getLogger()
@@ -79,7 +79,7 @@ def test_setup_logging_format(tmp_path):
 
 def test_setup_logging_removes_duplicate_handlers(tmp_path):
     """Test that calling setup_logging multiple times doesn't create duplicate handlers."""
-    with patch("stock_analyzer.logging_setup.Path.home", return_value=tmp_path):
+    with patch("market_scout.logging_setup.Path.home", return_value=tmp_path):
         setup_logging()
         first_handler_count = len(logging.getLogger().handlers)
         

@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 from datetime import datetime
 import pandas as pd
 
-from stock_analyzer.yahoo_client import YahooFinanceClient
-from stock_analyzer.exceptions import (
+from market_scout.yahoo_client import YahooFinanceClient
+from market_scout.exceptions import (
     SymbolNotFoundError,
     ServiceUnavailableError,
     NetworkError
@@ -30,7 +30,7 @@ class TestYahooFinanceClient:
         })
         
         # Mock the yfinance Ticker
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_instance = Mock()
             mock_instance.history.return_value = mock_df
             mock_ticker.return_value = mock_instance
@@ -55,7 +55,7 @@ class TestYahooFinanceClient:
         # Mock empty DataFrame
         mock_df = pd.DataFrame()
         
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_instance = Mock()
             mock_instance.history.return_value = mock_df
             mock_ticker.return_value = mock_instance
@@ -71,7 +71,7 @@ class TestYahooFinanceClient:
         """Test that ConnectionError is translated to NetworkError."""
         client = YahooFinanceClient()
         
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_ticker.side_effect = ConnectionError("Network unreachable")
             
             with pytest.raises(NetworkError) as exc_info:
@@ -84,7 +84,7 @@ class TestYahooFinanceClient:
         """Test that TimeoutError is translated to NetworkError."""
         client = YahooFinanceClient()
         
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_ticker.side_effect = TimeoutError("Request timed out")
             
             with pytest.raises(NetworkError) as exc_info:
@@ -96,7 +96,7 @@ class TestYahooFinanceClient:
         """Test that 404 errors are translated to SymbolNotFoundError."""
         client = YahooFinanceClient()
         
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_ticker.side_effect = Exception("404 Not Found")
             
             with pytest.raises(SymbolNotFoundError) as exc_info:
@@ -108,7 +108,7 @@ class TestYahooFinanceClient:
         """Test that 5xx errors are translated to ServiceUnavailableError."""
         client = YahooFinanceClient()
         
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_ticker.side_effect = Exception("500 Internal Server Error")
             
             with pytest.raises(ServiceUnavailableError) as exc_info:
@@ -120,7 +120,7 @@ class TestYahooFinanceClient:
         """Test that rate limit errors are translated to ServiceUnavailableError."""
         client = YahooFinanceClient()
         
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_ticker.side_effect = Exception("429 Rate limit exceeded")
             
             with pytest.raises(ServiceUnavailableError) as exc_info:
@@ -144,7 +144,7 @@ class TestYahooFinanceClient:
             'Stock Splits': [0.0]  # Extra column that should be filtered out
         })
         
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_instance = Mock()
             mock_instance.history.return_value = mock_df
             mock_ticker.return_value = mock_instance
@@ -166,7 +166,7 @@ class TestYahooFinanceClient:
             'Volume': [1000000]
         })
         
-        with patch('stock_analyzer.yahoo_client.yf.Ticker') as mock_ticker:
+        with patch('market_scout.yahoo_client.yf.Ticker') as mock_ticker:
             mock_instance = Mock()
             mock_instance.history.return_value = mock_df
             mock_ticker.return_value = mock_instance

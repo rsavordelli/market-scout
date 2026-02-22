@@ -27,17 +27,19 @@ logger = logging.getLogger(__name__)
 
 def display_usage() -> None:
     """Display usage instructions to the user."""
-    print("Stock Asset Analyzer")
+    print("Market Scout")
     print()
     print("Usage:")
-    print("  python -m stock_analyzer <SYMBOL>")
+    print("  market-scout <SYMBOL>")
+    print("  scout <SYMBOL>")
     print()
     print("Arguments:")
     print("  SYMBOL    Stock or cryptocurrency symbol (e.g., AAPL, BTC-USD)")
     print()
     print("Examples:")
-    print("  python -m stock_analyzer AAPL")
-    print("  python -m stock_analyzer BTC-USD")
+    print("  market-scout AAPL")
+    print("  scout BTC-USD")
+    print("  python -m market_scout TSLA")
     print("  python -m stock_analyzer TSLA")
 
 
@@ -66,18 +68,34 @@ def display_opportunities(result) -> None:
         print(f"{'-'*80}")
         
         for opp in opps:
+            # Calculate risk/reward metrics
+            risk_amount = float(opp.entry_price - opp.stop_loss_price)
+            reward_amount = float(opp.gain_target_price - opp.entry_price)
+            risk_reward_ratio = reward_amount / risk_amount if risk_amount > 0 else 0
+            
+            stop_loss_pct = (risk_amount / float(opp.entry_price)) * 100
+            gain_target_pct = (reward_amount / float(opp.entry_price)) * 100
+            
+            # Calculate data period
+            data_days = (opp.data_period_end - opp.data_period_start).days
+            
             print(f"  Model: {opp.model_id}")
+            print(f"  Data Period: {data_days} days ({opp.data_period_start.strftime('%Y-%m-%d')} to {opp.data_period_end.strftime('%Y-%m-%d')})")
+            print()
+            print("  Reasoning:")
+            print(f"    {opp.reasoning}")
+            print()
+            print("  Trade Setup:")
             print(f"    Entry Price:       ${opp.entry_price:>12.2f}")
-            print(f"    Stop Loss:         ${opp.stop_loss_price:>12.2f}")
-            print(f"    Gain Target:       ${opp.gain_target_price:>12.2f}")
-            
-            # Calculate risk/reward ratio
-            risk = float(opp.entry_price - opp.stop_loss_price)
-            reward = float(opp.gain_target_price - opp.entry_price)
-            risk_reward_ratio = reward / risk if risk > 0 else 0
-            
+            print(f"    Stop Loss:         ${opp.stop_loss_price:>12.2f}  ({stop_loss_pct:>5.1f}% risk)")
+            print(f"    Gain Target:       ${opp.gain_target_price:>12.2f}  ({gain_target_pct:>5.1f}% gain)")
+            print()
+            print("  Risk/Reward Analysis:")
+            print(f"    Risk Amount:       ${risk_amount:>12.2f}")
+            print(f"    Reward Potential:  ${reward_amount:>12.2f}")
             print(f"    Risk/Reward Ratio: {risk_reward_ratio:>12.2f}:1")
-            print(f"    Generated:         {opp.generated_at.strftime('%Y-%m-%d %H:%M:%S')}")
+            print()
+            print(f"  Generated:         {opp.generated_at.strftime('%Y-%m-%d %H:%M:%S')}")
             print()
 
 

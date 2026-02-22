@@ -192,8 +192,7 @@ This is a side project, but contributions are welcome:
 - **Risk management**: Position sizing recommendations, portfolio-level risk analysis, correlation analysis
 
 ### Nice to Have
-- **Web interface**: Dashboard to visualize opportunities and track performance
-- **Alerts**: Email/SMS notifications when high-confidence opportunities are found
+- **Alerts**: Send alerts
 - **Paper trading**: Simulate trades to track model performance in real-time
 - **Multi-timeframe analysis**: Support for different timeframes (1h, 4h, daily, weekly)
 - **Short positions**: Currently only supports long positions

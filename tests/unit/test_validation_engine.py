@@ -15,7 +15,7 @@ from decimal import Decimal
 
 import pytest
 
-from market_scout.models import TradingOpportunity, ValidationResult
+from market_scout.base_models import TradingOpportunity
 from market_scout.validation_engine import ValidationEngine
 
 
@@ -28,7 +28,7 @@ def create_test_opportunity(
     generated_at=None,
     data_period_start=None,
     data_period_end=None,
-    reasoning="Test reasoning"
+    reasoning="Test reasoning",
 ):
     """Helper function to create TradingOpportunity instances for testing."""
     if generated_at is None:
@@ -37,7 +37,7 @@ def create_test_opportunity(
         data_period_start = generated_at - timedelta(days=30)
     if data_period_end is None:
         data_period_end = generated_at - timedelta(days=1)
-    
+
     return TradingOpportunity(
         symbol=symbol,
         entry_price=entry_price,
@@ -47,7 +47,7 @@ def create_test_opportunity(
         generated_at=generated_at,
         data_period_start=data_period_start,
         data_period_end=data_period_end,
-        reasoning=reasoning
+        reasoning=reasoning,
     )
 
 
@@ -66,7 +66,7 @@ def sample_opportunity():
 def test_validate_empty_input(validation_engine):
     """Test that empty opportunity list returns empty result."""
     result = validation_engine.validate([])
-    
+
     assert result.opportunities == []
     assert result.consensus_opportunities == []
     assert result.model_count == 0
@@ -75,7 +75,7 @@ def test_validate_empty_input(validation_engine):
 def test_validate_single_opportunity(validation_engine, sample_opportunity):
     """Test validation with a single opportunity."""
     result = validation_engine.validate([sample_opportunity])
-    
+
     assert len(result.opportunities) == 1
     assert result.opportunities[0] == sample_opportunity
     assert result.consensus_opportunities == []  # No consensus with single opportunity
@@ -90,7 +90,7 @@ def test_validate_multiple_opportunities_same_model(validation_engine):
         stop_loss_price=Decimal("142.50"),
         gain_target_price=Decimal("165.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     opp2 = create_test_opportunity(
         symbol="GOOGL",
@@ -98,11 +98,11 @@ def test_validate_multiple_opportunities_same_model(validation_engine):
         stop_loss_price=Decimal("2660.00"),
         gain_target_price=Decimal("3080.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     result = validation_engine.validate([opp1, opp2])
-    
+
     assert len(result.opportunities) == 2
     assert result.consensus_opportunities == []  # No consensus (different symbols)
     assert result.model_count == 1
@@ -117,7 +117,7 @@ def test_validate_consensus_opportunities_same_symbol(validation_engine):
         stop_loss_price=Decimal("142.50"),
         gain_target_price=Decimal("165.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     opp2 = create_test_opportunity(
         symbol="AAPL",
@@ -125,25 +125,25 @@ def test_validate_consensus_opportunities_same_symbol(validation_engine):
         stop_loss_price=Decimal("143.45"),
         gain_target_price=Decimal("166.10"),
         model_id="model_b",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     result = validation_engine.validate([opp1, opp2])
-    
+
     assert len(result.opportunities) == 2
     assert len(result.consensus_opportunities) == 1
     assert result.model_count == 2
-    
+
     consensus = result.consensus_opportunities[0]
     assert consensus.symbol == "AAPL"
     assert len(consensus.supporting_models) == 2
     assert "model_a" in consensus.supporting_models
     assert "model_b" in consensus.supporting_models
-    
+
     # Check average prices
     expected_avg_entry = (Decimal("150.00") + Decimal("151.00")) / 2
     assert consensus.avg_entry_price == expected_avg_entry
-    
+
     # Check confidence score (2 models out of 2)
     assert consensus.confidence_score == 1.0
 
@@ -157,7 +157,7 @@ def test_validate_non_consensus_opportunities(validation_engine):
         stop_loss_price=Decimal("142.50"),
         gain_target_price=Decimal("165.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     opp2 = create_test_opportunity(
         symbol="AAPL",
@@ -165,11 +165,11 @@ def test_validate_non_consensus_opportunities(validation_engine):
         stop_loss_price=Decimal("152.00"),
         gain_target_price=Decimal("176.00"),
         model_id="model_b",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     result = validation_engine.validate([opp1, opp2])
-    
+
     assert len(result.opportunities) == 2
     assert result.consensus_opportunities == []  # No consensus due to price difference
     assert result.model_count == 2
@@ -185,9 +185,9 @@ def test_validate_filters_invalid_price_relationships(validation_engine):
         stop_loss_price=Decimal("142.50"),
         gain_target_price=Decimal("165.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     # Create another valid opportunity
     valid_opp2 = create_test_opportunity(
         symbol="GOOGL",
@@ -195,11 +195,11 @@ def test_validate_filters_invalid_price_relationships(validation_engine):
         stop_loss_price=Decimal("2660.00"),
         gain_target_price=Decimal("3080.00"),
         model_id="model_b",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     result = validation_engine.validate([valid_opp, valid_opp2])
-    
+
     # Both valid opportunities should be included
     assert len(result.opportunities) == 2
 
@@ -213,7 +213,7 @@ def test_validate_sorts_by_support_count(validation_engine):
         stop_loss_price=Decimal("142.50"),
         gain_target_price=Decimal("165.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     aapl_opp2 = create_test_opportunity(
         symbol="AAPL",
@@ -221,7 +221,7 @@ def test_validate_sorts_by_support_count(validation_engine):
         stop_loss_price=Decimal("143.00"),
         gain_target_price=Decimal("165.55"),
         model_id="model_b",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     aapl_opp3 = create_test_opportunity(
         symbol="AAPL",
@@ -229,9 +229,9 @@ def test_validate_sorts_by_support_count(validation_engine):
         stop_loss_price=Decimal("143.45"),
         gain_target_price=Decimal("166.10"),
         model_id="model_c",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     # Create opportunity for GOOGL with only 1 model
     googl_opp = create_test_opportunity(
         symbol="GOOGL",
@@ -239,12 +239,12 @@ def test_validate_sorts_by_support_count(validation_engine):
         stop_loss_price=Decimal("2660.00"),
         gain_target_price=Decimal("3080.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     # Mix the order
     result = validation_engine.validate([googl_opp, aapl_opp2, aapl_opp1, aapl_opp3])
-    
+
     # AAPL opportunities should come first (3 supporting models)
     # GOOGL should come last (1 supporting model)
     assert len(result.opportunities) == 4
@@ -263,7 +263,7 @@ def test_validate_multiple_symbols_with_consensus(validation_engine):
         stop_loss_price=Decimal("142.50"),
         gain_target_price=Decimal("165.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     aapl_opp2 = create_test_opportunity(
         symbol="AAPL",
@@ -271,9 +271,9 @@ def test_validate_multiple_symbols_with_consensus(validation_engine):
         stop_loss_price=Decimal("143.45"),
         gain_target_price=Decimal("166.10"),
         model_id="model_b",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     # GOOGL with consensus (2 models)
     googl_opp1 = create_test_opportunity(
         symbol="GOOGL",
@@ -281,7 +281,7 @@ def test_validate_multiple_symbols_with_consensus(validation_engine):
         stop_loss_price=Decimal("2660.00"),
         gain_target_price=Decimal("3080.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     googl_opp2 = create_test_opportunity(
         symbol="GOOGL",
@@ -289,9 +289,9 @@ def test_validate_multiple_symbols_with_consensus(validation_engine):
         stop_loss_price=Decimal("2679.00"),
         gain_target_price=Decimal("3102.00"),
         model_id="model_b",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     # MSFT without consensus (1 model)
     msft_opp = create_test_opportunity(
         symbol="MSFT",
@@ -299,17 +299,15 @@ def test_validate_multiple_symbols_with_consensus(validation_engine):
         stop_loss_price=Decimal("361.00"),
         gain_target_price=Decimal("418.00"),
         model_id="model_c",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
-    result = validation_engine.validate([
-        aapl_opp1, aapl_opp2, googl_opp1, googl_opp2, msft_opp
-    ])
-    
+
+    result = validation_engine.validate([aapl_opp1, aapl_opp2, googl_opp1, googl_opp2, msft_opp])
+
     assert len(result.opportunities) == 5
     assert len(result.consensus_opportunities) == 2
     assert result.model_count == 3
-    
+
     # Check that both AAPL and GOOGL have consensus
     consensus_symbols = {c.symbol for c in result.consensus_opportunities}
     assert "AAPL" in consensus_symbols
@@ -325,7 +323,7 @@ def test_validate_confidence_score_calculation(validation_engine):
         stop_loss_price=Decimal("142.50"),
         gain_target_price=Decimal("165.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     aapl_opp2 = create_test_opportunity(
         symbol="AAPL",
@@ -333,9 +331,9 @@ def test_validate_confidence_score_calculation(validation_engine):
         stop_loss_price=Decimal("143.45"),
         gain_target_price=Decimal("166.10"),
         model_id="model_b",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     # Third model suggests different symbol
     googl_opp = create_test_opportunity(
         symbol="GOOGL",
@@ -343,14 +341,14 @@ def test_validate_confidence_score_calculation(validation_engine):
         stop_loss_price=Decimal("2660.00"),
         gain_target_price=Decimal("3080.00"),
         model_id="model_c",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     result = validation_engine.validate([aapl_opp1, aapl_opp2, googl_opp])
-    
+
     assert len(result.consensus_opportunities) == 1
     consensus = result.consensus_opportunities[0]
-    
+
     # Confidence score should be 2/3 (2 models agree out of 3 total)
     assert consensus.confidence_score == pytest.approx(2.0 / 3.0)
 
@@ -364,7 +362,7 @@ def test_validate_edge_case_exactly_2_percent_difference(validation_engine):
         stop_loss_price=Decimal("95.00"),
         gain_target_price=Decimal("110.00"),
         model_id="model_a",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
     opp2 = create_test_opportunity(
         symbol="AAPL",
@@ -372,10 +370,10 @@ def test_validate_edge_case_exactly_2_percent_difference(validation_engine):
         stop_loss_price=Decimal("96.90"),
         gain_target_price=Decimal("112.20"),
         model_id="model_b",
-        generated_at=datetime.now()
+        generated_at=datetime.now(),
     )
-    
+
     result = validation_engine.validate([opp1, opp2])
-    
+
     # Should create consensus (within 2% includes exactly 2%)
     assert len(result.consensus_opportunities) == 1

@@ -5,6 +5,7 @@ This allows the package to be executed with:
 """
 
 import sys
+
 from .cli import main
 
 if __name__ == "__main__":
